@@ -1,0 +1,17 @@
+
+#boardContainer{
+    display: flex;
+    flex-direction: column;
+}
+
+.row{
+    display: flex;
+}
+
+.cell{
+    width: 10px;
+    height: 10px;
+    border: 1px black solid;
+    background-color: green;
+}
+
