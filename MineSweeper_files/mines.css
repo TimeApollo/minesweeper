@@ -2,7 +2,7 @@
 #boardContainer{
     display: flex;
     flex-direction: column;
-    cursor: pointer;
+    cursor: default;
 }
 
 .row{
