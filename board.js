@@ -1,11 +1,11 @@
 'use strict'
 
-function Board({ height , width , numOfMines , minesAdjacentToCell }){
+function Board({ height , width , numOfMines }){
     this.rows = height;
     this.columns = width;
     this.minesCount = numOfMines;
     this.displayMinesCount = numOfMines;
-    this.minesAdjacentToCell = minesAdjacentToCell;
+    this.minesAdjacentToCell = 0;
     this.boardGrid = [];
     this.elementGrid = [];
     this.mineArr = [];
@@ -24,9 +24,7 @@ function Board({ height , width , numOfMines , minesAdjacentToCell }){
         }
         this.boardGrid.push(rowArr);
     }
-    this.createElements()
-        .placeMines()
-        .fillNumbersOnBoard();
+    this.createElements();
 }
 
 Board.prototype.createElements = function(){
@@ -55,10 +53,11 @@ Board.prototype.createElements = function(){
     return this;
 }
 
-Board.prototype.placeMines = function(){
+Board.prototype.placeMines = function( row , col ){
     let mine = this.minesCount
     while (mine) {
         let [ mineRow , mineCol ] = this.randomCoordinateGenerator();
+        if( row === mineRow && col === mineCol) continue;
         if(this.boardGrid[mineRow][mineCol] === "mine") continue;
 
         this.boardGrid[mineRow][mineCol] = "mine";
@@ -92,7 +91,7 @@ Board.prototype.fillNumbersOnBoard = function(){
 
                 this.boardGrid[rowIndex][cellIndex] = this.minesAdjacentToCell;
             }
-            this.fillElementsGrid( rowIndex , cellIndex , cell );
+            this.fillElementsGridDataSet( rowIndex , cellIndex );
         })
     })
     console.log("values calculated" , this.boardGrid);
@@ -106,31 +105,41 @@ Board.prototype.checkForMines = function( row , column , xOffset , yOffset ) {
     }
 }
 
-Board.prototype.fillElementsGrid = function( rowIndex , cellIndex , cell ){
-    if( cell === "mine"){
-        this.elementGrid[rowIndex][cellIndex].textContent = '*';
+Board.prototype.fillElementsGridDataSet = function( rowIndex , cellIndex ){
+    if( this.boardGrid[rowIndex][cellIndex] === "mine"){
         this.elementGrid[rowIndex][cellIndex].dataset.value = "mine";
     }else if( this.boardGrid[rowIndex][cellIndex] > 0 ){
-        this.elementGrid[rowIndex][cellIndex].textContent = this.minesAdjacentToCell;
         this.elementGrid[rowIndex][cellIndex].dataset.value = this.minesAdjacentToCell;
     }else{
-        this.elementGrid[rowIndex][cellIndex].textContent = ' ';
         this.elementGrid[rowIndex][cellIndex].dataset.value = 0;
     }
 }
 
+Board.prototype.fillElementsGridTextValue = function( rowIndex , cellIndex ){
+    if( this.boardGrid[rowIndex][cellIndex] === "mine"){
+        this.elementGrid[rowIndex][cellIndex].textContent = '*';
+    }else if( this.boardGrid[rowIndex][cellIndex] > 0 ){
+        this.elementGrid[rowIndex][cellIndex].textContent =  this.elementGrid[rowIndex][cellIndex].dataset.value
+    }else{
+        this.elementGrid[rowIndex][cellIndex].textContent = ' ';
+    }
+}
+
 Board.prototype.handleEvent = function(event){
+    let rowIndex = Number(event.currentTarget.dataset.rowIndex);
+    let colIndex = Number(event.currentTarget.dataset.columnIndex);
+    let currentElementCell = this.elementGrid[rowIndex][colIndex];
+    let currentBoardCell = this.boardGrid[rowIndex][colIndex];
     if ( this.firstClick ){
         this.firstClick = false;
         this.startTime = new Date();
         this.timer = setInterval(() => this.startTimer(), 1000);
         setTimeout(() => clearInterval(this.timer), 999500)
+        this.placeMines( rowIndex , colIndex )
+            .fillNumbersOnBoard();
     }
     if( this.gameWonOrLost ) return;
-    let rowIndex = Number(event.currentTarget.dataset.rowIndex);
-    let colIndex = Number(event.currentTarget.dataset.columnIndex);
-    let currentElementCell = this.elementGrid[rowIndex][colIndex];
-    let currentBoardCell = this.boardGrid[rowIndex][colIndex];
+    
     
     if( event.type === "click" ){
         if( currentElementCell.isClicked === false ){
@@ -138,6 +147,7 @@ Board.prototype.handleEvent = function(event){
                 if( currentBoardCell === "mine"){
                     currentElementCell.classList.remove("cover");
                     currentElementCell.classList.add('clicked');
+                    this.fillElementsGridTextValue( rowIndex , colIndex );
                     this.lostGame();
                 }else if( this.boardGrid[rowIndex][colIndex] === 0){
                     this.fillBlanksOnBoard( rowIndex , colIndex );
@@ -168,9 +178,14 @@ Board.prototype.startTimer = function(){
 Board.prototype.lostGame = function(){
     this.gameWonOrLost = true;
     clearInterval(this.timer);
+    let rowIndex = 0;
+    let colIndex = 0;
     this.mineArr.forEach(currentElement => {
         if(currentElement.classList.contains( 'cover' ) && !currentElement.classList.contains( 'flag' )){
             currentElement.classList.remove( 'cover' );
+            rowIndex = currentElement.dataset.rowIndex;
+            colIndex = currentElement.dataset.columnIndex;
+            this.fillElementsGridTextValue( rowIndex , colIndex );
         }
     })
     setTimeout(()=> alert("you have lost"),50);
@@ -180,9 +195,14 @@ Board.prototype.winGame = function(){
     if( this.currentClickedCount === this.winningCount ){
         clearInterval(this.timer);
         this.gameWonOrLost = true;
+        let rowIndex = 0;
+        let colIndex = 0;
         this.mineArr.forEach(currentElement => {
             if(currentElement.classList.contains( 'cover' ) && !currentElement.classList.contains( 'flag' )){
                 currentElement.classList.remove( 'cover' );
+                rowIndex = currentElement.dataset.rowIndex;
+                colIndex = currentElement.dataset.columnIndex;
+                this.fillElementsGridTextValue( rowIndex , colIndex );
             }
         })
         setTimeout(() => alert("You have Won!"), 25);
@@ -228,11 +248,13 @@ Board.prototype.setCellToBlank = function( rowIndex , colIndex , queue ){
     this.elementGrid[rowIndex][colIndex].isClicked = true;
     this.queue.push([rowIndex , colIndex]);
     this.currentClickedCount++;
+    this.fillElementsGridTextValue( rowIndex , colIndex )
 }
 
 Board.prototype.setCellToClickedNumber = function ( row , column ){
     this.elementGrid[row][column].isClicked = true;
     this.elementGrid[row][column].classList.remove("cover");
+    this.fillElementsGridTextValue( row , column );
     this.currentClickedCount++;
 }
 

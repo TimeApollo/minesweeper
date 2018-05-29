@@ -1,10 +1,9 @@
 'use strict'
 
 const inputs = {
-    height: 10 ,
-    width: 6 ,
-    numOfMines: 10 ,
-    minesAdjacentToCell: 0
+    height: 20 ,
+    width: 15,
+    numOfMines: 50 ,
 }
 
 let boardElementContainter = document.getElementById( "boardContainer" );
