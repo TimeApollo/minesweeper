@@ -8,10 +8,19 @@ const inputs = {
 }
 
 let boardElementContainter = document.getElementById( "boardContainer" );
+let minesCountDiplay = document.getElementById("minesCount");
+let resetButton = document.getElementById('resetButton');
+let timer = document.getElementById('timer');
 
 let currentBoard = new Board( inputs );
-// currentBoard.createElements();
 
-// currentBoard.placeMines();
-
-// currentBoard.fillNumbersOnBoard();
+resetButton.addEventListener("click", function(){
+    clearInterval( currentBoard.timer );
+    while( boardElementContainter.lastChild ){
+        boardElementContainter.removeChild(boardElementContainter.lastChild);
+    }
+    
+    setTimeout(() => {
+        currentBoard = new Board( inputs )
+    }, 0);
+})

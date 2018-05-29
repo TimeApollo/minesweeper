@@ -1,8 +1,31 @@
+.title {
+    display:flex;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    padding-top: 40px;
+}
+
+.titleContent {
+    display: flex;
+    width: 50px;
+}
+
+#minesCount {
+    justify-content: flex-end;
+    padding-right: 1px;
+}
+
+#resetButton {
+    justify-content: center;
+    width: 35px;
+}
 
 #boardContainer{
     display: flex;
     flex-direction: column;
     cursor: pointer;
+    align-items: center;
 }
 
 .row{
@@ -31,6 +54,16 @@
 }
 
 .cell.mine {
+    display: flex;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border: 1px black solid;
+    background-color:lightgray;
+    color: black;
+}
+
+.cell.mine.clicked {
     display: flex;
     justify-content: center;
     width: 20px;

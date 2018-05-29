@@ -4,9 +4,18 @@ function Board({ height , width , numOfMines , minesAdjacentToCell }){
     this.rows = height;
     this.columns = width;
     this.minesCount = numOfMines;
+    this.displayMinesCount = numOfMines;
     this.minesAdjacentToCell = minesAdjacentToCell;
     this.boardGrid = [];
     this.elementGrid = [];
+    this.mineArr = [];
+    this.gameWonOrLost = false;
+    this.firstClick = true;
+    this.timer = 0;
+    this.winningCount = height * width - numOfMines;
+    this.currentClickedCount = 0;
+    minesCountDiplay.textContent = this.displayMinesCount;
+    timer.textContent = this.timer;
 
     for ( let row = 0 ; row < this.rows ; row ++ ){
         let rowArr = []
@@ -33,6 +42,7 @@ Board.prototype.createElements = function(){
             cell.dataset.columnIndex = columnIndex;
             cell.isClicked = false;
             cell.hasFlag = false;
+            cell.flaggedWrong = false;
             cell.addEventListener( "click" , this );
             cell.addEventListener( 'contextmenu' , this );
             rowDiv.appendChild(cell);
@@ -53,9 +63,11 @@ Board.prototype.placeMines = function(){
 
         this.boardGrid[mineRow][mineCol] = "mine";
         this.elementGrid[mineRow][mineCol].classList.add("mine");
+        this.mineArr.push(this.elementGrid[mineRow][mineCol]);
         mine--;
     }
     console.log("mines placed" , this.boardGrid);
+    console.log("mine arr", this.mineArr)
     return this;
 }
 
@@ -108,15 +120,25 @@ Board.prototype.fillElementsGrid = function( rowIndex , cellIndex , cell ){
 }
 
 Board.prototype.handleEvent = function(event){
+    if ( this.firstClick ){
+        this.firstClick = false;
+        this.startTime = new Date();
+        this.timer = setInterval(() => this.startTimer(), 1000);
+        setTimeout(() => clearInterval(this.timer), 999500)
+    }
+    if( this.gameWonOrLost ) return;
     let rowIndex = Number(event.currentTarget.dataset.rowIndex);
     let colIndex = Number(event.currentTarget.dataset.columnIndex);
     let currentElementCell = this.elementGrid[rowIndex][colIndex];
     let currentBoardCell = this.boardGrid[rowIndex][colIndex];
+    
     if( event.type === "click" ){
         if( currentElementCell.isClicked === false ){
             if( currentElementCell.hasFlag === false ){
                 if( currentBoardCell === "mine"){
                     currentElementCell.classList.remove("cover");
+                    currentElementCell.classList.add('clicked');
+                    this.lostGame();
                 }else if( this.boardGrid[rowIndex][colIndex] === 0){
                     this.fillBlanksOnBoard( rowIndex , colIndex );
                 }else {
@@ -126,6 +148,7 @@ Board.prototype.handleEvent = function(event){
         }else{
             this.autoClickNumbersAroundMines( rowIndex , colIndex );
         }
+        this.winGame();
     }else if( event.type === 'contextmenu' ){
         event.preventDefault();
         if(!currentElementCell.isClicked){
@@ -135,13 +158,48 @@ Board.prototype.handleEvent = function(event){
     }
 }
 
+Board.prototype.startTimer = function(){
+    let endTime = new Date();
+    let timeDiff = endTime - this.startTime;
+    timeDiff = Math.round(timeDiff/1000);
+    timer.textContent = timeDiff;
+}
+
+Board.prototype.lostGame = function(){
+    this.gameWonOrLost = true;
+    clearInterval(this.timer);
+    this.mineArr.forEach(currentElement => {
+        if(currentElement.classList.contains( 'cover' ) && !currentElement.classList.contains( 'flag' )){
+            currentElement.classList.remove( 'cover' );
+        }
+    })
+    setTimeout(()=> alert("you have lost"),50);
+}
+
+Board.prototype.winGame = function(){
+    if( this.currentClickedCount === this.winningCount ){
+        clearInterval(this.timer);
+        this.gameWonOrLost = true;
+        this.mineArr.forEach(currentElement => {
+            if(currentElement.classList.contains( 'cover' ) && !currentElement.classList.contains( 'flag' )){
+                currentElement.classList.remove( 'cover' );
+            }
+        })
+        setTimeout(() => alert("You have Won!"), 25);
+    }
+}
+
 Board.prototype.flipFlag = function( event ){
     if(event.currentTarget.hasFlag === true){
         event.currentTarget.hasFlag = false;
         event.currentTarget.classList.remove("flag");
+        this.displayMinesCount++;
+        minesCountDiplay.textContent = this.displayMinesCount;
     }else{
         event.currentTarget.hasFlag = true;
         event.currentTarget.classList.add("flag");
+        this.displayMinesCount--;
+        minesCountDiplay.textContent = this.displayMinesCount;
     }
 }
 
@@ -169,11 +227,13 @@ Board.prototype.setCellToBlank = function( rowIndex , colIndex , queue ){
     this.elementGrid[rowIndex][colIndex].classList.remove("cover");
     this.elementGrid[rowIndex][colIndex].isClicked = true;
     this.queue.push([rowIndex , colIndex]);
+    this.currentClickedCount++;
 }
 
 Board.prototype.setCellToClickedNumber = function ( row , column ){
     this.elementGrid[row][column].isClicked = true;
     this.elementGrid[row][column].classList.remove("cover");
+    this.currentClickedCount++;
 }
 
 Board.prototype.checkForBlanksOrNumbers = function( row , column , xOffset , yOffset ) {
@@ -204,6 +264,7 @@ Board.prototype.autoClickNumbersAroundMines = function( rowIndex , colIndex ){
             let [ minesRow , minesCol ] = this.minesArr.shift();
             if( flagsRow !== minesRow || flagsCol !== minesCol ){
                 this.minesEqualFlags = false;
+
             }
 
         }
@@ -228,8 +289,6 @@ Board.prototype.countFlags = function( rowIndex , colIndex ){
     this.checkAboveLeft( rowIndex , colIndex , this.countedFlags );
     this.checkBelowRight( rowIndex , colIndex , this.boardGrid.length , this.columns , this.countedFlags );
     this.checkBelowLeft( rowIndex , colIndex , this.boardGrid.length , this.countedFlags );
-    console.log(this.flagsAdjacentToCell);
-    console.log("flags" , this.flagsArr )
 }
 
 Board.prototype.countedFlags = function( rowIndex , colIndex , xOffset , yOffset ){
